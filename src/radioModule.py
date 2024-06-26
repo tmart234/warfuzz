@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import logging
 from target import Target
 from typing import List, Dict, Any, Optional
@@ -16,10 +17,12 @@ class RadioModule:
         self.config = config
         self.mode = None
         self.attack_type = None
-        self.target = None
+        self.current_target = None # pointer to current target object
         self.packets_sent = 0
         self.packet_count = config.get('packet_count', 10)  # Default to 10 if not specified
         self.targets: List[Target] = []  # List to hold Target objects
+        self.baud = config.get('baud', None)
+        self.comport = config.get('com', None)
 
     @abstractmethod
     def scan_for_devices(self) -> List[Target]:

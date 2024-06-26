@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class WardriverManager:
     def __init__(self):
-        self.radio_modules: List[RadioModule] = []
+        self.modules = self.scan_drivers()
 
     def load_radio_modules(self, configs: List[Dict[str, Any]]):
         for config in configs:
@@ -30,3 +30,6 @@ class WardriverManager:
                 return module
         logger.error(f"Radio module with identifier {identifier} not found")
         return None
+    
+    def scan_drivers():
+        return
