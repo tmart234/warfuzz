@@ -18,6 +18,7 @@ def init_serial(port, baudrate):
         logging.error(f"Error opening serial port: {e}")
         return None
 
+
 def spi_transfer(ser, data, sleep_duration=0.001):
     ser.write(data)
     time.sleep(sleep_duration)
@@ -73,6 +74,9 @@ def configure_cc1101(ser):
         (CC1101_SYNC0, 0x91)        # Sync word, low byte
     ]
     batch_write_registers(ser, register_values)
+    # Set PATABLE for maximum output power
+    max_power = 0xC0  # Example value for maximum power; refer to datasheet for correct value
+    spi_transfer(ser, bytes([CC1101_PATABLE, max_power]))
     logging.info("CC1101 configuration complete")
 
 def set_frequency(ser, freq2, freq1, freq0):
