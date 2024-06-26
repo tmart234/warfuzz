@@ -46,6 +46,7 @@ CC1101_AGCTEST = 0x2B  # AGC test
 CC1101_TEST2 = 0x2C  # Various test settings
 CC1101_TEST1 = 0x2D  # Various test settings
 CC1101_TEST0 = 0x2E  # Various test settings
+CC1101_PATABLE = 0x3E
 
 # Define CC1101 strobe commands
 CC1101_SRES = 0x30  # Reset chip
