@@ -1,4 +1,4 @@
-from radioModule import RadioModule  # Correct import statement
+from src.radio import RadioModule  # Correct import statement
 import logging
 from typing import List, Dict, Any, Optional
 from flask import Flask, render_template, jsonify, request

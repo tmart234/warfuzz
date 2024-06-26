@@ -1,7 +1,6 @@
-from radioModule import RadioModule
+from src.radio import RadioModule
 import logging 
 from typing import List, Dict, Any, Optional
-
 
 logger = logging.getLogger(__name__)
 
