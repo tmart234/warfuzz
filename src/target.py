@@ -1,7 +1,8 @@
 class Target:
-    def __init__(self, identifier: str, rssi: int):
-        self.identifier = identifier
+    def __init__(self, name: str, rssi: int, id: str):
+        self.name = name
         self.rssi = rssi
+        self.id = id
 
     def __repr__(self):
-        return f"Target(identifier={self.identifier}, rssi={self.rssi}, baud_rate={self.baud_rate}, com_port={self.com_port})"
+        return f"Target(identifier={self.id}, rssi={self.rssi}, name={self.name})"
