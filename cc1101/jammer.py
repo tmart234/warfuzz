@@ -2,7 +2,6 @@ import serial
 import time
 import logging
 from registers import *
-
 '''
 cp2102 USB to UART + CC1101 UART module
 '''
@@ -118,6 +117,15 @@ def read_rssi(ser):
         rssi -= 256
     return rssi / 2 - 74  # RSSI offset adjustment as per CC1101 datasheet
 
+def check_carrier_sense(ser):
+    response = spi_transfer(ser, bytes([CC1101_PKTSTATUS | 0x80]), sleep_duration=0.001)
+    if len(response) < 1:
+        logging.error("Failed to read carrier sense status")
+        return False
+    pktstatus = response[0]
+    carrier_sense = pktstatus & 0x40  # Carrier sense bit
+    return carrier_sense != 0
+
 def find_highest_rssi_channel(ser, frequency_range):
     max_rssi = -float('inf')
     best_freq_mhz = None
@@ -128,14 +136,15 @@ def find_highest_rssi_channel(ser, frequency_range):
         spi_transfer(ser, bytes([CC1101_SRX]), sleep_duration=0.001)  # Enter RX mode
         time.sleep(0.1)  # Wait for the CC1101 to settle in RX mode
         rssi = read_rssi(ser)
-        logging.info(f"Scanned frequency: {freq_mhz} MHz, RSSI: {rssi} dBm")
-        if rssi > max_rssi:
+        carrier_sense = check_carrier_sense(ser)
+        logging.info(f"Scanned frequency: {freq_mhz} MHz, RSSI: {rssi} dBm, Carrier Sense: {carrier_sense}")
+        if carrier_sense and rssi > max_rssi:
             max_rssi = rssi
             best_freq_mhz = freq_mhz
             best_freq_regs = (freq2, freq1, freq0)
     if best_freq_regs is None:
         logging.error("No valid frequencies found during RSSI scan.")
-        return 433.92  # Default frequency (433.92 MHz)
+        return None 
     logging.info(f"Highest RSSI found: {max_rssi} dBm at frequency {best_freq_regs}")
     return best_freq_mhz
 
