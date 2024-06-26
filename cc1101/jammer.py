@@ -3,6 +3,10 @@ import time
 import logging
 from registers import *
 
+'''
+cp2102 USB to UART + CC1101 UART module
+'''
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

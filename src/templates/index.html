@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fuzzer Metrics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .metric {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fuzzer Metrics</h1>
+    <div class="metric">Time: <span id="time">00:00:00</span></div>
+    <div class="metric">Packets Sent: <span id="packets_sent">0</span></div>
+    <div class="metric">Connected to Target: <span id="connected_to_target">No</span></div>
+
+    <h2>Scanned Devices</h2>
+    <div id="device_list"></div>
+    <button onclick="scanDevices()">Scan Devices</button>
+    <button onclick="selectTarget()">Select Target</button>
+    
+    <script>
+        function fetchMetrics() {
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('time').innerText = data.time;
+                    document.getElementById('packets_sent').innerText = data.packets_sent;
+                    document.getElementById('connected_to_target').innerText = data.connected_to_target ? "Yes" : "No";
+                });
+        }
+
+        function fetchDevices() {
+            fetch('/api/devices')
+                .then(response => response.json())
+                .then(data => {
+                    const deviceList = document.getElementById('device_list');
+                    deviceList.innerHTML = '';
+                    data.forEach(device => {
+                        const deviceElement = document.createElement('div');
+                        deviceElement.innerText = `Identifier: ${device.identifier}, RSSI: ${device.rssi}`;
+                        deviceElement.onclick = () => selectDevice(device.identifier);
+                        deviceList.appendChild(deviceElement);
+                    });
+                });
+        }
+
+        function selectDevice(identifier) {
+            fetch('/api/select_target', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ identifier })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(`Target selected: ${data.target.identifier}`);
+                });
+        }
+
+        function scanDevices() {
+            fetchDevices();
+        }
+
+        function selectTarget() {
+            const selectedDevice = prompt("Enter the identifier of the device to target:");
+            if (selectedDevice) {
+                selectDevice(selectedDevice);
+            }
+        }
+
+        // Refresh metrics every 2 seconds
+        setInterval(fetchMetrics, 2000);
+
+        // Fetch metrics and devices on page load
+        fetchMetrics();
+        fetchDevices();
+    </script>
+</body>
+</html>
