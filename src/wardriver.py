@@ -22,7 +22,7 @@ class WardriverManager:
 
     def run_modules(self):
         for module in self.radio_modules:
-            module.run()
+            module.start()
 
     def _find_module_by_id(self, identifier: str) -> RadioModule:
         for module in self.radio_modules:

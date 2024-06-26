@@ -11,6 +11,16 @@
         .metric {
             margin-bottom: 10px;
         }
+        .device {
+            cursor: pointer;
+            padding: 5px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .device:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -22,7 +32,6 @@
     <h2>Scanned Devices</h2>
     <div id="device_list"></div>
     <button onclick="scanDevices()">Scan Devices</button>
-    <button onclick="selectTarget()">Select Target</button>
     
     <script>
         function fetchMetrics() {
@@ -43,7 +52,8 @@
                     deviceList.innerHTML = '';
                     data.forEach(device => {
                         const deviceElement = document.createElement('div');
-                        deviceElement.innerText = `Identifier: ${device.identifier}, RSSI: ${device.rssi}`;
+                        deviceElement.className = 'device';
+                        deviceElement.innerText = `Identifier: ${device.identifier}, RSSI: ${device.rssi}, Baud Rate: ${device.baud_rate}, COM Port: ${device.com_port}`;
                         deviceElement.onclick = () => selectDevice(device.identifier);
                         deviceList.appendChild(deviceElement);
                     });
@@ -66,13 +76,6 @@
 
         function scanDevices() {
             fetchDevices();
-        }
-
-        function selectTarget() {
-            const selectedDevice = prompt("Enter the identifier of the device to target:");
-            if (selectedDevice) {
-                selectDevice(selectedDevice);
-            }
         }
 
         // Refresh metrics every 2 seconds

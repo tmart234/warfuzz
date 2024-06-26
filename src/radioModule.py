@@ -1,4 +1,5 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from threading import Thread
 import logging
 from target import Target
 from typing import List, Dict, Any, Optional
@@ -102,3 +103,7 @@ class RadioModule:
         best_target = max(devices, key=lambda t: t.rssi)
         logger.info(f"Best target based on RSSI: {best_target}")
         return best_target
+    
+    def start(self):
+        thread = Thread(target=self.run)
+        thread.start()
