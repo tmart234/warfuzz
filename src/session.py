@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from threading import Thread
 from connection import Connection
 from target import Target
@@ -13,6 +13,8 @@ class Session:
         self.connection: Optional[Connection] = None
         self.thread: Optional[Thread] = None
         self.running = False
+        self.targets: List[Target] = []
+
 
     def set_radio_module(self, module: RadioModule):
         try:
@@ -58,10 +60,12 @@ class Session:
         if self.thread and self.thread.is_alive():
             self.thread.join()
 
-    def set_mode(self, mode: str, attack_type: str, target: Optional[Target] = None):
+    def set_mode(self, mode: str, attack_type: str, targets: Optional[List[Target]] = None):
         if not self.radio_module:
             logger.error("No radio module set")
             raise ValueError("Radio module must be set before setting mode")
 
-        self.radio_module.set_mode(mode, attack_type, target)
+        if targets:
+            self.targets = targets
+        self.radio_module.set_mode(mode, attack_type, self.targets)
         logger.info(f"Set mode {mode} with attack type {attack_type} on radio module {self.radio_module.identifier}")
