@@ -99,7 +99,3 @@ class RadioModule(ABC):
         logger.info(f"Scanning for nearest or highest RSSI device with module {self.identifier}")
         devices = self.scan_for_devices()
         return max(devices, key=lambda t: t.rssi) if devices else None
-
-    def start(self):
-        thread = Thread(target=self.run)
-        thread.start()
