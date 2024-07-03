@@ -1,10 +1,10 @@
-from src.radio import RadioModule  # Correct import statement
-import logging
-from typing import List, Dict, Any, Optional
 from flask import Flask, render_template, jsonify, request
-from wardriver import WardriverManager
+from session import Session
+from target import Target
+import logging
 
 logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 
 # Fuzzer metrics
@@ -14,18 +14,21 @@ metrics = {
     "connected_to_target": False
 }
 
-manager = WardriverManager()
+# Store scanned devices temporarily
+scanned_devices = []
+
+# Example configuration for radio modules
+configs = [
+    {'identifier': 'cc2500_module', 'module_type': 'cc2500', 'packet_count': 20},
+    {'identifier': 'cc2540_module', 'module_type': 'cc2540', 'packet_count': 15},
+    {'identifier': 'cc1101_module', 'module_type': 'cc1101', 'packet_count': 10}
+]
+
+session = Session(configs)
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/api/metrics', methods=['POST'])
-def update_metrics():
-    global metrics
-    data = request.json
-    metrics.update(data)
-    return jsonify(metrics)
 
 @app.route('/api/metrics', methods=['GET'])
 def get_metrics():
@@ -38,7 +41,6 @@ def update_metrics():
     metrics.update(data)
     return jsonify(metrics)
 
-
 @app.route('/api/devices', methods=['GET'])
 def get_devices():
     return jsonify([device.__dict__ for device in scanned_devices])
@@ -48,22 +50,22 @@ def select_target():
     global scanned_devices
     data = request.json
     target_identifier = data.get('identifier')
-    for device in scanned_devices:
-        if device.identifier == target_identifier:
-            selected_target = device
-            break
-    else:
+    selected_target = next((device for device in scanned_devices if device.identifier == target_identifier), None)
+    
+    if not selected_target:
         return jsonify({"error": "Target not found"}), 404
 
-    # Example usage of setting the target for a specific module
-    manager.configure_module('radio1', 'fuzzing', 'selected', target=selected_target)
+    session.set_mode('cc2500_module', 'fuzzing', 'selected', target=selected_target)
     return jsonify({"message": "Target selected", "target": selected_target.__dict__})
 
-def update_global_metrics(time: str, packets_sent: int, connected_to_target: bool):
-    global metrics
-    metrics['time'] = time
-    metrics['packets_sent'] = packets_sent
-    metrics['connected_to_target'] = connected_to_target
-
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    
+    # Simulate scanning devices
+    for module in session.radio_modules:
+        scanned_devices.extend(module.scan_for_devices())
+
+    # Start the session
+    session.start()
+
     app.run(debug=True)

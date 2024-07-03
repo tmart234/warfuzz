@@ -1,12 +1,17 @@
 import serial
 import time
 import logging
+
+import usb.core
+import usb.util
 from registers import *
+import sys
+
 '''
 cp2102 USB to UART + CC1101 UART module
 '''
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG)
 
 def init_serial(port, baudrate):
     try:
@@ -18,15 +23,15 @@ def init_serial(port, baudrate):
         logging.error(f"Error opening serial port: {e}")
         return None
 
-
-def spi_transfer(ser, data, sleep_duration=0.001):
+def spi_transfer(ser, data, sleep_duration=0.01):
+    logging.debug(f"Sending SPI data: {data}")
     ser.write(data)
     time.sleep(sleep_duration)
     response = ser.read(len(data))
+    logging.debug(f"SPI transfer response: {response}")
     if not response:
         logging.error(f"No response received for SPI transfer with data: {data}")
         return bytes([0])
-    logging.debug(f"SPI transfer data sent: {data}, received: {response}")
     return response
 
 def reset_cc1101(ser):
@@ -38,7 +43,7 @@ def reset_cc1101(ser):
 def batch_write_registers(ser, register_values):
     for addr, value in register_values:
         addr = addr & 0x3F  # Ensure address is within range
-        response = spi_transfer(ser, bytes([addr, value]), sleep_duration=0.001)
+        response = spi_transfer(ser, bytes([addr, value]), sleep_duration=0.01)
         if response[0] != value:
             logging.warning(f"Write verification failed for register {addr}: expected {value}, got {response[0]}")
 
@@ -75,7 +80,7 @@ def configure_cc1101(ser):
     ]
     batch_write_registers(ser, register_values)
     # Set PATABLE for maximum output power
-    max_power = 0xC0  # Example value for maximum power; refer to datasheet for correct value
+    max_power = 0xC0  # value for maximum power
     spi_transfer(ser, bytes([CC1101_PATABLE, max_power]))
     logging.info("CC1101 configuration complete")
 
@@ -152,9 +157,78 @@ def find_highest_rssi_channel(ser, frequency_range):
     logging.info(f"Highest RSSI found: {max_rssi} dBm at frequency {best_freq_regs}")
     return best_freq_mhz
 
+
+def check_uart_bridge(ser):
+    # Simple check to ensure UART bridge is operational
+    try:
+        ser.write(b'AT\r\n')
+        response = ser.read(64)
+        logging.debug(f"UART bridge response: {response}")
+        return response != b''
+    except Exception as e:
+        logging.error(f"Error checking UART bridge: {e}")
+        return False
+    
+def check_cc1101(ser):
+    try:
+        # Send strobe command to reset the CC1101
+        reset_response = spi_transfer(ser, bytes([CC1101_SRES]), sleep_duration=0.1)
+        logging.debug(f"Reset response: {reset_response}")
+
+        # Read part number from CC1101
+        partnum = spi_transfer(ser, bytes([CC1101_PARTNUM | 0x80]), sleep_duration=0.01)
+        logging.debug(f"Part number response: {partnum}")
+
+        if len(partnum) < 1 or partnum[0] == 0x00:
+            logging.error("Failed to read part number from CC1101")
+            return False
+        
+        # Read version number from CC1101
+        version = spi_transfer(ser, bytes([CC1101_VERSION | 0x80]), sleep_duration=0.01)
+        logging.debug(f"Version number response: {version}")
+
+        if len(version) < 1 or version[0] == 0x00:
+            logging.error("Failed to read version number from CC1101")
+            return False
+
+        logging.info(f"CC1101 Part Number: {partnum[0]}")
+        logging.info(f"CC1101 Version: {version[0]}")
+        return True
+    except Exception as e:
+        logging.error(f"Error communicating with CC1101: {e}")
+        return False
+
+def check_device_connection(port, baudrate):
+    # Check CC1101 connection via CP2102
+    ser = init_serial(port, baudrate)
+    if not ser:
+        return False
+    
+    logging.info("Checking CC1101 connection...")
+    
+    # Test communication by sending a basic command and reading back a response
+    test_command = bytes([CC1101_SRES])
+    logging.debug(f"Test command: {test_command}")
+    response = spi_transfer(ser, test_command)
+    logging.debug(f"Test command response: {response}")
+    
+    if not check_cc1101(ser):
+        ser.close()
+        return False
+    
+    ser.close()
+    return True
+    
+    
 if __name__ == "__main__":
     port = "COM4"  # Adjust as necessary for your system
     baudrate = 115200  # Maximum supported baud rate
+
+    if check_device_connection(port, baudrate):
+        logging.info("CC1101 device is connected and operational")
+    else:
+        logging.error("CC1101 device is not connected or failed to initialize")
+        sys.exit()
 
     ser = init_serial(port, baudrate)
     if ser:

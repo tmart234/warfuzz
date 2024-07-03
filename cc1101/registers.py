@@ -1,3 +1,6 @@
+import usb.core
+import usb.util
+
 # Define CC1101 register addresses
 CC1101_IOCFG2 = 0x00  # GDO2 output pin configuration
 CC1101_IOCFG1 = 0x01  # GDO1 output pin configuration
@@ -90,3 +93,13 @@ CC1101_READ_BURST = 0xC0
 CC1101_STATUS_BYTE_MASK = 0x70  # Mask for the status byte
 CC1101_CHIP_RDYn = 0x80  # Indicates chip is ready
 
+# Constants for CP2102
+VID_SILABS = 0x10C4
+PID_CP210x = 0xEA60
+CP210x_CONFIG = 0xFF
+CTRL_IN = usb.util.CTRL_IN
+CTRL_OUT = usb.util.CTRL_OUT
+CTRL_TYPE_VENDOR = usb.util.CTRL_TYPE_VENDOR
+
+# Constants for CC1101
+CC1101_SRES = 0x30
