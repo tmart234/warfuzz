@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable
 from threading import Thread
 from connection import Connection
 from target import Target
@@ -14,6 +14,8 @@ class Session:
         self.thread: Optional[Thread] = None
         self.running = False
         self.targets: List[Target] = []
+        self.setup_func: Optional[Callable[[], None]] = None
+        self.teardown_func: Optional[Callable[[], None]] = None
 
 
     def set_radio_module(self, module: RadioModule):
@@ -51,6 +53,12 @@ class Session:
             if self.connection:
                 self.connection.close()
                 logger.info(f"Closed connection to {self.connection.host}:{self.connection.port}")
+
+    def set_setup(self, setup_func: Callable[[], None]):
+        self.setup_func = setup_func
+
+    def set_teardown(self, teardown_func: Callable[[], None]):
+        self.teardown_func = teardown_func
 
     def stop(self):
         self.running = False
