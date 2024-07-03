@@ -12,7 +12,7 @@ def update_global_metrics(time: str, packets_sent: int, connected_to_target: boo
     metrics['packets_sent'] = packets_sent
     metrics['connected_to_target'] = connected_to_target
 
-class RadioModule:
+class RadioModule(ABC):
     def __init__(self, identifier: str, config: Dict[str, Any]):
         self.identifier = identifier
         self.config = config
@@ -61,7 +61,6 @@ class RadioModule:
     def _update_metrics(self):
         update_global_metrics("00:01:00", self.packets_sent, self.target is not None)
 
-
     def _run_targeted_attack(self):
         if self.target is None:
             logger.error("Target must be provided for targeted attack")
@@ -88,18 +87,18 @@ class RadioModule:
         logger.info(f"Sent {self.packet_count} packets to {self.target}")
   
     def _scan_for_devices(self) -> List[Any]:
-        # Simulated scanning implementation
+        # Placeholder for device scanning implementation
         logger.info(f"Scanning for devices with module {self.identifier}")
-        return ['device1', 'device2', 'device3']
+        return []
 
     def _user_select_target(self, devices: List[Target]) -> Target:
-        # This method will be called from the frontend
+        # Placeholder for user selection implementation
+        logger.info(f"User selecting target from devices: {devices}")
         return devices[0] if devices else None
 
     def _scan_for_nearest_or_highest_rssi_device(self) -> Target:
         logger.info(f"Scanning for nearest or highest RSSI device with module {self.identifier}")
         devices = self.scan_for_devices()
-        # Return the device with the highest RSSI (highest RSSI is the least negative value)
         best_target = max(devices, key=lambda t: t.rssi)
         logger.info(f"Best target based on RSSI: {best_target}")
         return best_target

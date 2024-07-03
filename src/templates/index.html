@@ -70,7 +70,11 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    alert(`Target selected: ${data.target.identifier}`);
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        alert(`Target selected: ${data.target.identifier}`);
+                    }
                 });
         }
 

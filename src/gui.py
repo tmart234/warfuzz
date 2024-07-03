@@ -17,14 +17,8 @@ metrics = {
 # Store scanned devices temporarily
 scanned_devices = []
 
-# Example configuration for radio modules
-configs = [
-    {'identifier': 'cc2500_module', 'module_type': 'cc2500', 'packet_count': 20},
-    {'identifier': 'cc2540_module', 'module_type': 'cc2540', 'packet_count': 15},
-    {'identifier': 'cc1101_module', 'module_type': 'cc1101', 'packet_count': 10}
-]
-
-session = Session(configs)
+# Initialize session
+session = Session()
 
 @app.route('/')
 def index():
@@ -55,11 +49,16 @@ def select_target():
     if not selected_target:
         return jsonify({"error": "Target not found"}), 404
 
-    session.set_mode('cc2500_module', 'fuzzing', 'selected', target=selected_target)
+    session.set_mode('example_module', 'fuzzing', 'selected', target=selected_target)
     return jsonify({"message": "Target selected", "target": selected_target.__dict__})
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    
+    # Example of adding a custom radio module (user-defined)
+    # from custom_radio_module import CustomRadioModule
+    # custom_module = CustomRadioModule('example_module', {'packet_count': 20})
+    # session.add_radio_module(custom_module)
     
     # Simulate scanning devices
     for module in session.radio_modules:

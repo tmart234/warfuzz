@@ -13,11 +13,10 @@ class Session:
         self.connections: List[Connection] = []
         self.running = False
 
-    def add_radio_module(self, identifier: str, config: Dict[str, Any]):
+    def add_radio_module(self, radio_module: RadioModule):
         try:
-            module = RadioModule(identifier, config)
-            self.radio_modules.append(module)
-            logger.info(f"Loaded radio module: {module.identifier}")
+            self.radio_modules.append(radio_module)
+            logger.info(f"Loaded radio module: {radio_module.identifier}")
         except Exception as e:
             logger.error(f"Failed to add radio module: {e}")
 
