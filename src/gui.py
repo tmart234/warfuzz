@@ -1,6 +1,5 @@
 from flask import Flask, render_template, jsonify, request
 from session import Session
-from target import Target
 import logging
 
 logger = logging.getLogger(__name__)

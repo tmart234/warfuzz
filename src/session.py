@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from threading import Thread
 from connection import Connection
 from target import Target
@@ -9,73 +9,59 @@ logger = logging.getLogger(__name__)
 
 class Session:
     def __init__(self):
-        self.radio_modules: List[RadioModule] = []
-        self.connections: List[Connection] = []
+        self.radio_module: Optional[RadioModule] = None
+        self.connection: Optional[Connection] = None
         self.thread: Optional[Thread] = None
         self.running = False
 
-    def add_radio_module(self, module: RadioModule):
+    def set_radio_module(self, module: RadioModule):
         try:
-            self.radio_modules.append(module)
+            self.radio_module = module
             logger.info(f"Loaded radio module: {module.identifier}")
         except Exception as e:
-            logger.error(f"Failed to add radio module: {e}")
+            logger.error(f"Failed to set radio module: {e}")
 
-    def add_connection(self, host: str, port: int):
+    def set_connection(self, host: str, port: int):
         try:
-            connection = Connection(host, port)
-            self.connections.append(connection)
+            self.connection = Connection(host, port)
             logger.info(f"Initialized connection to {host}:{port}")
         except Exception as e:
-            logger.error(f"Failed to add connection: {e}")
+            logger.error(f"Failed to set connection: {e}")
 
     def start(self):
         if self.thread and self.thread.is_alive():
             logger.warning("Session is already running.")
             return
-        
+
         self.running = True
-        self.open_connections()
         self.thread = Thread(target=self._run)
         self.thread.start()
 
     def _run(self):
-        threads = []
-        for module in self.radio_modules:
-            thread = Thread(target=module.start)
-            thread.start()
-            threads.append(thread)
-        
-        for thread in threads:
-            thread.join()
-    
-    def _run(self):
-        for module in self.radio_modules:
-            module.start()
+        if self.connection:
+            self.connection.open()
+            logger.info(f"Opened connection to {self.connection.host}:{self.connection.port}")
+
+        try:
+            if self.radio_module:
+                self.radio_module.start()
+        finally:
+            if self.connection:
+                self.connection.close()
+                logger.info(f"Closed connection to {self.connection.host}:{self.connection.port}")
 
     def stop(self):
         self.running = False
-        for module in self.radio_modules:
-            module.stop()
-        self.close_connections()
+        if self.radio_module:
+            self.radio_module.stop()
 
         if self.thread and self.thread.is_alive():
             self.thread.join()
 
-    def open_connections(self):
-        for connection in self.connections:
-            connection.open()
-            logger.info(f"Opened connection to {connection.host}:{connection.port}")
+    def set_mode(self, mode: str, attack_type: str, target: Optional[Target] = None):
+        if not self.radio_module:
+            logger.error("No radio module set")
+            raise ValueError("Radio module must be set before setting mode")
 
-    def close_connections(self):
-        for connection in self.connections:
-            connection.close()
-            logger.info(f"Closed connection to {connection.host}:{connection.port}")
-
-    def set_mode(self, identifier: str, mode: str, attack_type: str, target: Optional[Target] = None):
-        for module in self.radio_modules:
-            if module.identifier == identifier:
-                module.set_mode(mode, attack_type, target)
-                return
-        logger.error(f"Radio module with identifier {identifier} not found")
-        raise ValueError("Invalid radio module identifier")
+        self.radio_module.set_mode(mode, attack_type, target)
+        logger.info(f"Set mode {mode} with attack type {attack_type} on radio module {self.radio_module.identifier}")
