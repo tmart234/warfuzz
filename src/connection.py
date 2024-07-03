@@ -1,29 +1,53 @@
-from target import *
+import serial
+import socket
+import logging
+from typing import Union
+from message import Message
+
+logger = logging.getLogger(__name__)
 
 class Connection:
-    def __init__(self, target: Target):
-        self.target = target
-        self.connected = False
+    def __init__(self, host: str = None, port: int = None, comport: str = None, baudrate: int = 9600):
+        self.host = host
+        self.port = port
+        self.comport = comport
+        self.baudrate = baudrate
+        self.serial_conn = None
+        self.socket_conn = None
 
     def open(self):
-        # Implement connection logic here, e.g., serial communication setup
-        print(f"Connecting to {self.target.identifier} at {self.target.com_port} with baud rate {self.target.baud_rate}")
-        self.connected = True
+        if self.comport:
+            self.serial_conn = serial.Serial(self.comport, self.baudrate, timeout=1)
+            logger.info(f"Opened serial connection on {self.comport}")
+        elif self.host and self.port:
+            self.socket_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket_conn.connect((self.host, self.port))
+            logger.info(f"Opened socket connection to {self.host}:{self.port}")
 
     def close(self):
-        # Implement disconnection logic here
-        print(f"Disconnecting from {self.target.identifier}")
-        self.connected = False
+        if self.serial_conn and self.serial_conn.is_open:
+            self.serial_conn.close()
+            logger.info(f"Closed serial connection on {self.comport}")
+        elif self.socket_conn:
+            self.socket_conn.close()
+            logger.info(f"Closed socket connection to {self.host}:{self.port}")
 
-    def send(self, data):
-        if not self.connected:
-            raise RuntimeError("Not connected to target")
-        # Implement data sending logic here
-        print(f"Sending data to {self.target.identifier}: {data}")
+    def send(self, message: Message):
+        data = message.to_raw()
+        if self.serial_conn and self.serial_conn.is_open:
+            self.serial_conn.write(data)
+            logger.info(f"Sent data over serial: {data}")
+        elif self.socket_conn:
+            self.socket_conn.sendall(data)
+            logger.info(f"Sent data over socket: {data}")
 
-    def recv(self):
-        if not self.connected:
-            raise RuntimeError("Not connected to target")
-        # Implement data receiving logic here
-        print(f"Receiving data from {self.target.identifier}")
-        return b"response"  # Simulated response
+    def recv(self, buffer_size: int = 1024) -> bytes:
+        if self.serial_conn and self.serial_conn.is_open:
+            data = self.serial_conn.read(buffer_size)
+            logger.info(f"Received data over serial: {data}")
+            return data
+        elif self.socket_conn:
+            data = self.socket_conn.recv(buffer_size)
+            logger.info(f"Received data over socket: {data}")
+            return data
+        return b''
