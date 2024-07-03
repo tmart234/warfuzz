@@ -11,12 +11,13 @@ class Session:
     def __init__(self):
         self.radio_modules: List[RadioModule] = []
         self.connections: List[Connection] = []
+        self.thread: Optional[Thread] = None
         self.running = False
 
-    def add_radio_module(self, radio_module: RadioModule):
+    def add_radio_module(self, module: RadioModule):
         try:
-            self.radio_modules.append(radio_module)
-            logger.info(f"Loaded radio module: {radio_module.identifier}")
+            self.radio_modules.append(module)
+            logger.info(f"Loaded radio module: {module.identifier}")
         except Exception as e:
             logger.error(f"Failed to add radio module: {e}")
 
@@ -29,8 +30,16 @@ class Session:
             logger.error(f"Failed to add connection: {e}")
 
     def start(self):
+        if self.thread and self.thread.is_alive():
+            logger.warning("Session is already running.")
+            return
+        
         self.running = True
         self.open_connections()
+        self.thread = Thread(target=self._run)
+        self.thread.start()
+
+    def _run(self):
         threads = []
         for module in self.radio_modules:
             thread = Thread(target=module.start)
@@ -39,12 +48,19 @@ class Session:
         
         for thread in threads:
             thread.join()
+    
+    def _run(self):
+        for module in self.radio_modules:
+            module.start()
 
     def stop(self):
         self.running = False
         for module in self.radio_modules:
             module.stop()
         self.close_connections()
+
+        if self.thread and self.thread.is_alive():
+            self.thread.join()
 
     def open_connections(self):
         for connection in self.connections:
