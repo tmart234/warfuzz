@@ -41,24 +41,19 @@ class Session:
         self.thread = Thread(target=self._run)
         self.thread.start()
 
-    def _run(self):
-        if self.connection:
-            self.connection.open()
-            logger.info(f"Opened connection to {self.connection.host}:{self.connection.port}")
-
-        try:
-            if self.radio_module:
-                self.radio_module.start()
-        finally:
-            if self.connection:
-                self.connection.close()
-                logger.info(f"Closed connection to {self.connection.host}:{self.connection.port}")
-
     def set_setup(self, setup_func: Callable[[], None]):
         self.setup_func = setup_func
 
     def set_teardown(self, teardown_func: Callable[[], None]):
         self.teardown_func = teardown_func
+
+    def run(self):
+        if self.setup_func:
+            self.setup_func()
+        if self.radio_module:
+            self.radio_module.start()
+        if self.teardown_func:
+            self.teardown_func()
 
     def stop(self):
         self.running = False
